@@ -3,6 +3,7 @@
 A DIY alternative to EmulStick. You plug a **LilyGO T‑Dongle‑S3** into any PC.
 The PC sees a normal USB keyboard and mouse, with no drivers, and the keyboard also works in BIOS/UEFI.
 You control it from a phone app over Bluetooth LE, so your phone stays on its normal Wi‑Fi.
+Developed as a tool for service engineers to troubleshoot computers without a mouse and or keyboard.
 
 ```
  ┌──────────┐   Bluetooth LE    ┌────────────────┐   USB HID    ┌──────┐
