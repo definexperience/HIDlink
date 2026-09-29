@@ -12,6 +12,8 @@ Developed as a tool for service engineers to troubleshoot computers without a mo
  └──────────┘  auto-reconnect   │ LCD shows state│  mouse+media │      │
                                 └────────────────┘              └──────┘
 ```
+<img width="947" height="490" alt="400c7cd5-f332-4e91-8e79-9a8320e4d5f3" src="https://github.com/user-attachments/assets/5cd19017-02bc-4900-9e0f-4a5d126a8e71" />
+<img width="912" height="2048" alt="70d8d86e-a663-44b2-959f-1c38fa2f918b" src="https://github.com/user-attachments/assets/c670a869-b5d7-401b-8752-2a685379a235" />
 
 ```
 hidlink/
