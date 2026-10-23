@@ -298,6 +298,30 @@ static void strokeRaw(uint8_t mods, uint8_t key) {
   Keyboard.sendReport(&empty);
 }
 
+// Type one ASCII character with the selected layout.
+// (Own implementation instead of Keyboard.write(): with "shift key reports"
+// enabled, the core's release() never lets go of Shift, so everything after
+// the first capital/symbol came out shifted.)
+static bool typeAscii(uint8_t c) {
+  if (c == '\n') { strokeRaw(0, 0x28); return true; }  // Enter
+  if (c == '\t') { strokeRaw(0, 0x2B); return true; }  // Tab
+  if (c >= 0x80) return false;
+  uint8_t k = LAYOUTS[layoutId].map[c];
+  if (!k) return false;
+  uint8_t mods = 0;
+  if (k & 0x80) {  // needs Shift
+    mods |= 0x02;
+    k &= 0x7F;
+  }
+  if (k & 0x40) {  // needs AltGr
+    mods |= 0x40;
+    k &= ~0x40;
+  }
+  if (k == 0x32) k = 0x64;  // ISO key next to left Shift (layout table encoding)
+  strokeRaw(mods, k);       // modifier report first, then key, then all released
+  return true;
+}
+
 static const uint8_t KP_DIGIT[10] = {0x62, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, 0x60, 0x61};  // keypad 0..9
 
 // Windows: hold Alt, type 0nnn on the numeric keypad (Windows-1252 code)
@@ -333,22 +357,22 @@ static bool typeLinuxUnicode(uint32_t cp) {
   delay(15);
   char hex[9];
   snprintf(hex, sizeof hex, "%lx", (unsigned long)cp);
-  for (char *h = hex; *h; h++) Keyboard.write((uint8_t)*h);
-  Keyboard.write(' ');
+  for (char *h = hex; *h; h++) typeAscii((uint8_t)*h);
+  typeAscii(' ');
   return true;
 }
 
 // Type one non-ASCII character. Returns false if it can't be typed.
 static bool typeSpecial(uint32_t cp) {
   if (cp == 0xA0) {  // no-break space -> normal space
-    Keyboard.write(' ');
+    typeAscii(' ');
     return true;
   }
   if (layoutId == LAYOUT_US_INTL) {
     if (const IntlChar *c = findUsIntl(cp)) {
       if (c->dead) {
-        Keyboard.write((uint8_t)c->dead);
-        Keyboard.write((uint8_t)c->base);
+        typeAscii((uint8_t)c->dead);
+        typeAscii((uint8_t)c->base);
       } else {
         strokeRaw(c->mods, c->key);
       }
@@ -386,12 +410,10 @@ static void typeText(const uint8_t *s, size_t n) {
     i += len;
 
     if (cp == 0 || cp == '\r') continue;
-    if (cp == '\n') Keyboard.write(KEY_RETURN);
-    else if (cp == '\t') Keyboard.write(KEY_TAB);
-    else if (cp < 0x80) {
-      Keyboard.write((uint8_t)cp);
+    if (cp < 0x80) {
+      typeAscii((uint8_t)cp);
       // US-International: ' " ` ~ ^ are dead keys; a space makes them literal
-      if (usIntl && (cp == '\'' || cp == '"' || cp == '`' || cp == '~' || cp == '^')) Keyboard.write(' ');
+      if (usIntl && (cp == '\'' || cp == '"' || cp == '`' || cp == '~' || cp == '^')) typeAscii(' ');
     } else if (usbReportMode()) {  // BIOS can only do plain ASCII
       typeSpecial(cp);
     }
@@ -539,7 +561,6 @@ void setup() {
   USB.productName(USB_PRODUCT_NAME);
   USB.manufacturerName(USB_MANUFACTURER_NAME);
   Keyboard.onEvent(onKeyboardEvent);
-  Keyboard.setShiftKeyReports(true);  // separate Shift report: safer for BIOS
   setLayout(savedLayout < LAYOUT_COUNT ? savedLayout : LAYOUT_US_INTL, false);
   Mouse.begin();
   Consumer.begin();

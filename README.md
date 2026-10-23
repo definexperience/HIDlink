@@ -39,7 +39,7 @@ Download the `.factory.bin` file for your board from the repository's **Releases
 1. Put the dongle in **download mode**: hold the button on the dongle while you plug it into the PC, then release the button.
 2. Open <https://espressif.github.io/esptool-js/> in Chrome or Edge.
 3. Set the baud rate to 921600, click **Connect**, and choose the "USB JTAG/serial" port.
-4. Under *Flash Address*, enter `0x0`. As the file, choose the downloaded `hidlink-t-dongle-s3-v1.1.0.factory.bin`, then click **Program**.
+4. Under *Flash Address*, enter `0x0`. As the file, choose the downloaded `hidlink-t-dongle-s3-v1.1.1.factory.bin`, then click **Program**.
 5. Unplug the dongle and plug it back in. The screen shows `HIDlink-XXXX` and **PAIRING**.
 
 | Image | Use for |
