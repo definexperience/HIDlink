@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" width="160" alt="HIDlink logo"></p>
+
 # HIDlink: phone → BLE → USB keyboard & mouse
 
 A DIY alternative to EmulStick. You plug a **LilyGO T‑Dongle‑S3** into any PC.
@@ -19,6 +21,7 @@ Developed as a tool for service engineers to troubleshoot computers without a mo
 hidlink/
 ├── firmware/   PlatformIO project for the dongle (Arduino-ESP32 3.3 + NimBLE)
 ├── app/        Flutter app (Android + iOS)
+├── assets/     logo (logo.svg + logo-foreground/-background.svg are the sources; app icons are in app/assets/icon)
 └── prebuilt/   place for ready-to-flash firmware images (published as GitHub Releases)
 ```
 
@@ -39,7 +42,7 @@ Download the `.factory.bin` file for your board from the repository's **Releases
 1. Put the dongle in **download mode**: hold the button on the dongle while you plug it into the PC, then release the button.
 2. Open <https://espressif.github.io/esptool-js/> in Chrome or Edge.
 3. Set the baud rate to 921600, click **Connect**, and choose the "USB JTAG/serial" port.
-4. Under *Flash Address*, enter `0x0`. As the file, choose the downloaded `hidlink-t-dongle-s3-v1.1.1.factory.bin`, then click **Program**.
+4. Under *Flash Address*, enter `0x0`. As the file, choose the downloaded `hidlink-t-dongle-s3-v1.1.3.factory.bin`, then click **Program**.
 5. Unplug the dongle and plug it back in. The screen shows `HIDlink-XXXX` and **PAIRING**.
 
 | Image | Use for |
@@ -72,6 +75,7 @@ The first build downloads the pioarduino platform, which bundles Arduino‑ESP32
 
 | Line | Meaning |
 |---|---|
+| `HIDlink-XXXX` … `v1.1.3` (top bar) | Bluetooth name of the dongle and its firmware version |
 | `PC connected` / `no PC` / `BIOS mode` | USB state. In BIOS mode only the keyboard works, because BIOS doesn't support a mouse from this dongle. |
 | `Phone connected` / `securing..` / `waiting` | Bluetooth state |
 | `PAIRING 57s` | The dongle accepts a new phone for the next 57 seconds |
@@ -100,7 +104,7 @@ The screen shows a progress bar while you hold the button, so you can see which 
 
 ## 3. Build the app
 
-The app folder contains only the Dart source. `flutter create` generates the Android and iOS project folders, and a small script then adds the Bluetooth permissions.
+The app folder contains only the Dart source. `flutter create` generates the Android and iOS project folders, and a small script then adds the Bluetooth permissions and generates the app icon.
 
 1. Install Flutter 3.27 or newer (<https://docs.flutter.dev/get-started/install>) and run `flutter doctor`.
 2. In the `app` folder, run:
@@ -108,7 +112,7 @@ The app folder contains only the Dart source. `flutter create` generates the And
 ```bash
 cd app
 flutter create --org nl.yourcompany --project-name hidlink --platforms=android,ios .
-dart run tool/setup.dart        # adds Bluetooth permissions + app name
+dart run tool/setup.dart        # adds Bluetooth permissions, app name + app icon
 flutter pub get
 ```
 
@@ -153,6 +157,7 @@ The code is identical for both platforms. iOS pairs automatically when the app f
   * **Paste** (clipboard button on the right): types whatever is on the phone's clipboard, in one tap. Copy a password on the phone, tap Paste, done. The text is never shown on screen, and a trailing line break is dropped, so it doesn't press Enter by accident. Android 12+ shows a short "pasted from clipboard" notice. iOS may ask "Allow Paste": set it to *Allow* in the iPhone Settings for HIDlink.
 * **Layout chip** (top right): set this to the PC's keyboard layout, e.g. *US‑International*, which is common in NL. Typed text then comes out correctly. The setting is saved on the dongle, and a fresh dongle starts on US‑International.
 * **⋮ menu:** Settings (pointer speed, acceleration, natural scrolling, tap‑to‑click, PC operating system), *Release all keys*, and Disconnect.
+* **Versions:** the dongle list shows the app version at the bottom. *Settings* ends with the app version and the dongle's firmware version, and warns when the dongle firmware is older than the app expects.
 
 ### Special characters (é, ë, €, £, °, …)
 
@@ -204,7 +209,8 @@ Each write is one packet, `[type][payload]`, with little‑endian values:
 | `06` release | – | release everything |
 | `07` OS | id u8 | 0 Windows, 1 Linux: how non‑ASCII characters are typed |
 
-Status: `[proto=2, usb(0/1/2=BIOS), kbd LEDs, layout, #bonds, flags(bit0 pairing), OS mode]`.
+Status: `[proto=3, usb(0/1/2=BIOS), kbd LEDs, layout, #bonds, flags(bit0 pairing), OS mode, firmware version…]`.
+The firmware version (from protocol 3) is plain ASCII after the first 7 bytes, e.g. `1.1.3`.
 The format is simple enough to write another client for, such as a Python script on a laptop.
 
 ---
@@ -215,6 +221,7 @@ The format is simple enough to write another client for, such as a Python script
 |---|---|
 | App says "Dongle refused this phone" | This phone isn't paired. Hold the dongle button 3 s until the screen shows PAIRING, then tap *Try again*. |
 | Worked before, now fails after resetting the dongle | Remove `HIDlink-XXXX` in the phone's Bluetooth settings, then pair again. |
+| App takes long to reconnect after the PC reboots | The dongle restarts when USB power drops. From firmware/app 1.1.2 the app notices within about 2 s and keeps retrying on its own. Update both if it still takes 10 s or more. |
 | Can't flash anymore | Hold the button while plugging in (download mode), then flash. |
 | Wrong characters typed (`z`/`y` swapped, `"` missing) | Set the right layout via the layout chip. On US‑International, quotes are handled automatically. |
 | Accents or € come out wrong | Check the layout chip (US‑International?) and *Settings → PC operating system*. |

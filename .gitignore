@@ -1,0 +1,3 @@
+# Firmware images go to GitHub Releases, never into the repo
+prebuilt/
+*.bin

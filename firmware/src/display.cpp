@@ -160,6 +160,8 @@ static void drawInfo(const UiState &s) {
 static void drawMain(const UiState &s) {
   canvas->fillRect(0, 0, W, 14, C_BAR);
   text(4, 3, s.name, C_TXT);
+  static const char ver[] = "v" HIDLINK_FW_VERSION;
+  text(W - 6 * (int)(sizeof(ver) - 1) - 4, 3, ver, C_DIM);
 
   const char *usb = s.usb == 0 ? "no PC" : (s.usb == 2 ? "BIOS mode" : "connected");
   statusRow(19, "PC", usb, s.usb ? C_OK : C_OFF);

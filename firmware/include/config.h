@@ -4,7 +4,7 @@
 // Most options can also be set from platformio.ini with -D flags.
 // ---------------------------------------------------------------------------
 
-#define HIDLINK_FW_VERSION "1.1.1"
+#define HIDLINK_FW_VERSION "1.1.3"
 
 // BLE name shown on the phone: "<prefix>-XXXX" (XXXX = last 2 bytes of MAC)
 #ifndef HIDLINK_NAME_PREFIX

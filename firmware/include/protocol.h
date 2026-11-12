@@ -23,7 +23,7 @@
 //   0x07 OS         id:u8                   0 = Windows, 1 = Linux (saved);
 //                   picks how non-ASCII characters are typed
 //
-// Status characteristic value (7 bytes):
+// Status characteristic value (7 bytes + firmware version):
 //   [0] protocol version
 //   [1] USB state: 0 = not connected to a PC, 1 = connected, 2 = connected
 //       but the PC is in BIOS/boot mode (keyboard only)
@@ -32,9 +32,11 @@
 //   [4] number of paired phones
 //   [5] flags: bit0 = pairing mode active, bit1 = typing in progress
 //   [6] OS mode (0 Windows, 1 Linux)
+//   [7..] firmware version as ASCII, e.g. "1.1.3" (no terminator; added in
+//       protocol 3, older firmware sends only the 7 bytes above)
 // ---------------------------------------------------------------------------
 
-#define HIDLINK_PROTOCOL_VERSION 2
+#define HIDLINK_PROTOCOL_VERSION 3
 
 #define HIDLINK_SERVICE_UUID "c0de0001-7b1e-4a5e-9d3f-4b1d0e5a1e00"
 #define HIDLINK_INPUT_UUID   "c0de0002-7b1e-4a5e-9d3f-4b1d0e5a1e00"

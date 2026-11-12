@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E88E5"/><stop offset="1" stop-color="#0D2B52"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#bg)"/><g transform="translate(264.8 320.0) scale(1.0215)"><rect x="0" y="0" width="300" height="560" rx="58" fill="#FFFFFF"/>
+<rect x="22" y="62" width="256" height="430" rx="18" fill="#0B1E33"/>
+<rect x="114.0" y="26" width="72" height="12" rx="6" fill="#C5D3E3"/>
+<rect x="100.0" y="516" width="100" height="12" rx="6" fill="#C5D3E3"/>
+<rect x="37.5" y="102" width="140" height="18" rx="9" fill="#4FC3F7" opacity=".6"/>
+<rect x="189.5" y="92" width="10" height="38" rx="5" fill="#FFB74D"/>
+<rect x="37.5" y="142" width="90" height="18" rx="9" fill="#4FC3F7" opacity=".35"/>
+<rect x="38" y="245" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="96" y="245" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="156" y="245" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="214" y="245" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="38" y="304" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="96" y="304" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="156" y="304" width="48" height="48" rx="11" fill="#FFB74D"/>
+<rect x="214" y="304" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="38" y="363" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="96" y="363" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="156" y="363" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="214" y="363" width="48" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="38" y="422" width="48" height="48" rx="11" fill="#4FC3F7" opacity=".5"/>
+<rect x="96" y="422" width="107" height="48" rx="11" fill="#4FC3F7"/>
+<rect x="214" y="422" width="48" height="48" rx="11" fill="#4FC3F7" opacity=".5"/>
+<path d="M242.0 -46.0 A104 104 0 0 1 346.0 58.0" fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linecap="round"/>
+<path d="M242.0 -106.0 A164 164 0 0 1 406.0 58.0" fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linecap="round"/>
+<path d="M242.0 -166.0 A224 224 0 0 1 466.0 58.0" fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linecap="round"/></g></svg>

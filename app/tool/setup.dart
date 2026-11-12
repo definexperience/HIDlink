@@ -4,13 +4,14 @@
 //   dart run tool/setup.dart
 //
 // It adds the Bluetooth permissions to the generated Android/iOS projects
-// and sets the app name. Safe to run more than once.
+// sets the app name and generates the app icons. Safe to run more than once.
 import 'dart:io';
 
 void main() {
   var ok = true;
   ok &= _android();
   ok &= _ios();
+  ok &= _icons();
   // `flutter create` adds a counter-app test that doesn't match this app
   final test = File('test/widget_test.dart');
   if (test.existsSync() && test.readAsStringSync().contains('MyApp')) {
@@ -18,6 +19,17 @@ void main() {
     stdout.writeln('✓ removed template test/widget_test.dart');
   }
   stdout.writeln(ok ? '\nSetup done.' : '\nSetup finished with warnings (see above).');
+}
+
+/// App icons from assets/icon (config in pubspec.yaml, flutter_launcher_icons).
+bool _icons() {
+  final r = Process.runSync('dart', ['run', 'flutter_launcher_icons'], runInShell: true);
+  if (r.exitCode != 0) {
+    stderr.writeln('! App icon generation failed:\n${r.stdout}${r.stderr}');
+    return false;
+  }
+  stdout.writeln('✓ App icons generated');
+  return true;
 }
 
 bool _android() {

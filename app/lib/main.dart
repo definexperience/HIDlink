@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'dongle.dart';
 import 'protocol.dart';
@@ -7,10 +8,16 @@ import 'widgets/keys.dart';
 import 'widgets/textbar.dart';
 import 'widgets/trackpad.dart';
 
+/// App version from pubspec.yaml (e.g. "1.1.3"), read once at start-up.
+String appVersion = '';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = Settings();
   await settings.load();
+  try {
+    appVersion = (await PackageInfo.fromPlatform()).version;
+  } catch (_) {}
   final dongle = Dongle();
   runApp(HidLinkApp(dongle: dongle, settings: settings));
   dongle.init();
@@ -127,6 +134,14 @@ class ConnectScreen extends StatelessWidget {
             actions: [TextButton(onPressed: () => d.startScan(), child: const Text('Retry'))],
           ),
         Expanded(child: body),
+        if (appVersion.isNotEmpty)
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text('App v$appVersion', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+            ),
+          ),
       ]),
     );
   }
@@ -333,6 +348,23 @@ class _ControlScreenState extends State<ControlScreen> {
               Navigator.pop(ctx);
               d.forgetDongle(removePhonePairing: true);
             },
+          ),
+          const Divider(),
+          // About: app + dongle firmware version
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.info_outline),
+            title: const Text('App version'),
+            trailing: Text(appVersion.isEmpty ? '?' : appVersion),
+          ),
+          ListTile(
+            dense: true,
+            leading: Icon(Icons.memory, color: d.status.firmwareOutdated ? Colors.orange : null),
+            title: const Text('Dongle firmware'),
+            subtitle: d.status.firmwareOutdated
+                ? const Text('Older than this app expects. Please update the dongle firmware.')
+                : null,
+            trailing: Text(d.status.firmware ?? (d.status.firmwareOutdated ? 'older than 1.1.3' : '?')),
           ),
         ]),
       ),

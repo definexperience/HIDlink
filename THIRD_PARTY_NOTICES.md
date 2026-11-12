@@ -35,6 +35,8 @@ the link above.
 | [Flutter](https://github.com/flutter/flutter) | BSD-3-Clause |
 | [universal_ble](https://github.com/Navideck/universal_ble) | BSD-3-Clause |
 | [shared_preferences](https://pub.dev/packages/shared_preferences) | BSD-3-Clause |
+| [package_info_plus](https://pub.dev/packages/package_info_plus) | BSD-3-Clause |
+| [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons) (build tool only, not in the app) | MIT |
 
 Flutter can show the full licence texts of everything bundled in the app via
 `showLicensePage()`.

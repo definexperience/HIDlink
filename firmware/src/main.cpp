@@ -67,6 +67,7 @@ static volatile bool bleConnected = false;
 static volatile bool bleSecured = false;
 static volatile uint16_t bleConnHandle = 0;
 static volatile uint32_t bleConnectedAt = 0;
+static volatile bool connParamsReasserted = false;  // re-requested once this link
 static volatile uint32_t pairingUntil = 0;  // millis() deadline, 0 = off
 static volatile bool pairingSucceeded = false;
 static volatile bool authRejected = false;
@@ -112,6 +113,16 @@ static void startPairing() {
   statusDirty = true;
 }
 
+// 7.5–15 ms connection interval for a responsive mouse, and a 2 s supervision
+// timeout so the phone notices quickly when the dongle loses USB power (it then
+// dies without sending a disconnect, and the phone only finds out by timeout).
+#define CONN_ITVL_MIN 6     // x 1.25 ms
+#define CONN_ITVL_MAX 12    // x 1.25 ms
+#define CONN_TIMEOUT  200   // x 10 ms
+static void requestConnParams(uint16_t handle) {
+  if (server) server->updateConnParams(handle, CONN_ITVL_MIN, CONN_ITVL_MAX, 0, CONN_TIMEOUT);
+}
+
 static void stopPairing() {
   pairingUntil = 0;
   applySecurity();
@@ -127,16 +138,28 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     bleConnectedAt = millis();
     bleSecured = false;
     bleConnected = true;
-    // 7.5–15 ms connection interval for a responsive mouse, 2 s supervision timeout
-    s->updateConnParams(info.getConnHandle(), 6, 12, 0, 200);
+    connParamsReasserted = false;
 #if REQUIRE_BONDING
     // Ask the phone to encrypt. A known phone re-encrypts silently with the
     // stored key; a new phone only gets bonded while pairing mode is open.
     NimBLEDevice::startSecurity(info.getConnHandle());
 #else
     bleSecured = true;
+    requestConnParams(info.getConnHandle());
 #endif
     statusDirty = true;
+  }
+
+  // The phone may pick its own parameters (Android's "high priority" mode uses
+  // a 5-20 s supervision timeout). If the timeout ends up longer than ours,
+  // ask once more for our own values.
+  void onConnParamsUpdate(NimBLEConnInfo &info) override {
+    DBG("BLE conn params: itvl %u x1.25ms, latency %u, timeout %u x10ms\n", info.getConnInterval(),
+        info.getConnLatency(), info.getConnTimeout());
+    if (bleSecured && !connParamsReasserted && info.getConnTimeout() > CONN_TIMEOUT) {
+      connParamsReasserted = true;
+      requestConnParams(info.getConnHandle());
+    }
   }
 
   void onDisconnect(NimBLEServer *, NimBLEConnInfo &, int reason) override {
@@ -161,6 +184,9 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 #endif
     bleSecured = true;
     statusDirty = true;
+    // Ask for our connection parameters now: Android tends to ignore requests
+    // made while it is still discovering services right after connecting.
+    requestConnParams(info.getConnHandle());
     DBG("BLE secured: %s\n", info.getIdAddress().toString().c_str());
   }
 };
@@ -183,7 +209,8 @@ class InputCallbacks : public NimBLECharacteristicCallbacks {
 
 static void updateStatusChar(bool notify) {
   if (!statusChar) return;
-  uint8_t v[7] = {
+  static const char fw[] = HIDLINK_FW_VERSION;
+  uint8_t v[7 + sizeof(fw) - 1] = {
     HIDLINK_PROTOCOL_VERSION,
     usbState(),
     kbdLeds,
@@ -192,6 +219,7 @@ static void updateStatusChar(bool notify) {
     (uint8_t)((pairingActive() ? 1 : 0) | (typing ? 2 : 0)),
     osMode,
   };
+  memcpy(v + 7, fw, sizeof(fw) - 1);  // [7..] firmware version, ASCII, no terminator
   statusChar->setValue(v, sizeof v);
   if (notify && bleConnected && bleSecured) statusChar->notify();
 }

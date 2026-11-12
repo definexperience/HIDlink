@@ -2,6 +2,9 @@
 import 'dart:typed_data';
 
 class Hid {
+  /// Must match HIDLINK_PROTOCOL_VERSION in the firmware.
+  static const protocolVersion = 3;
+
   static const serviceUuid = 'c0de0001-7b1e-4a5e-9d3f-4b1d0e5a1e00';
   static const inputUuid = 'c0de0002-7b1e-4a5e-9d3f-4b1d0e5a1e00';
   static const statusUuid = 'c0de0003-7b1e-4a5e-9d3f-4b1d0e5a1e00';
@@ -55,6 +58,7 @@ class DongleStatus {
   final int bonds;
   final bool pairing;
   final int osMode; // 0 Windows, 1 Linux
+  final String? firmware; // e.g. "1.1.3"; null = firmware older than protocol 3
 
   const DongleStatus({
     this.protocol = 0,
@@ -64,6 +68,7 @@ class DongleStatus {
     this.bonds = 0,
     this.pairing = false,
     this.osMode = 0,
+    this.firmware,
   });
 
   factory DongleStatus.parse(List<int> v) {
@@ -76,8 +81,13 @@ class DongleStatus {
       bonds: v[4],
       pairing: (v[5] & 1) != 0,
       osMode: v.length > 6 ? v[6] : 0,
+      // [7..] firmware version as ASCII (protocol 3+)
+      firmware: v.length > 7 ? String.fromCharCodes(v.sublist(7)) : null,
     );
   }
+
+  /// The dongle speaks an older protocol than this app: firmware update advised.
+  bool get firmwareOutdated => protocol != 0 && protocol < Hid.protocolVersion;
 
   bool get capsLock => (leds & 0x02) != 0;
   bool get numLock => (leds & 0x01) != 0;

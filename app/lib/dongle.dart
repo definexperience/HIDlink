@@ -38,6 +38,17 @@ class Dongle extends ChangeNotifier {
 
   int _chunk = 19; // text bytes per packet, updated after MTU negotiation
   bool _userDisconnect = false;
+
+  // Auto-reconnect to the last dongle. The dongle reboots whenever the PC
+  // power-cycles USB, so a failed attempt is normal and is simply retried.
+  static const _retryDelaysMs = [1000, 2000, 4000, 5000];
+  int _retryCount = 0;
+  Timer? _retryTimer;
+  // A drop while securing usually means "this phone isn't paired", but it also
+  // happens when the dongle loses power mid-setup. For the remembered dongle
+  // only give up (and show the pairing hint) after this many in a row.
+  static const _maxSecuringDrops = 3;
+  int _securingDrops = 0;
   bool _textCancel = false;
   double typingProgress = -1; // -1 = not typing
 
@@ -66,7 +77,9 @@ class Dongle extends ChangeNotifier {
   // Scanning
   // ---------------------------------------------------------------------------
   Future<void> startScan() async {
-    if (state == LinkState.scanning || state == LinkState.connecting) return;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    if (state == LinkState.scanning || state == LinkState.connecting || state == LinkState.securing) return;
     found.clear();
     error = null;
     state = LinkState.scanning;
@@ -140,12 +153,10 @@ class Dongle extends ChangeNotifier {
       notifyListeners();
 
       await UniversalBle.discoverServices(id);
-
-      if (!kIsWeb && Platform.isAndroid) {
-        try {
-          await UniversalBle.requestConnectionPriority(id, BleConnectionPriority.highPerformance);
-        } catch (_) {}
-      }
+      // No requestConnectionPriority(highPerformance) here: the dongle already
+      // asks for a 7.5-15 ms interval, and Android's high-priority preset would
+      // replace the dongle's 2 s supervision timeout with 5-20 s, so the app
+      // would take that long to notice the dongle rebooting.
       await _negotiateMtu(id);
 
       // Reading the (encrypted) status characteristic triggers pairing on a
@@ -171,6 +182,8 @@ class Dongle extends ChangeNotifier {
       await UniversalBle.subscribeNotifications(id, Hid.serviceUuid, Hid.statusUuid);
 
       state = LinkState.connected;
+      _retryCount = 0;
+      _securingDrops = 0;
       lastDeviceId = id;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefLastId, id);
@@ -181,7 +194,20 @@ class Dongle extends ChangeNotifier {
       await _cleanup(disconnect: true);
       state = LinkState.idle;
       notifyListeners();
+      if (!_userDisconnect && id == lastDeviceId) _scheduleReconnect();
     }
+  }
+
+  /// Look for the remembered dongle again after a short, growing pause. The
+  /// pauses also keep us under Android's limit of 5 scan starts per 30 s.
+  void _scheduleReconnect() {
+    _retryTimer?.cancel();
+    final ms = _retryDelaysMs[_retryCount.clamp(0, _retryDelaysMs.length - 1).toInt()];
+    _retryCount++;
+    _retryTimer = Timer(Duration(milliseconds: ms), () {
+      _retryTimer = null;
+      if (!_userDisconnect && state == LinkState.idle && bluetoothOn) startScan();
+    });
   }
 
   Future<void> _negotiateMtu(String id) async {
@@ -199,23 +225,33 @@ class Dongle extends ChangeNotifier {
     if (state == LinkState.idle) return;
     final wasConnecting = state == LinkState.connecting;
     final wasSecuring = state == LinkState.securing;
-    _cleanup(disconnect: false);
+    final isLast = deviceId != null && deviceId == lastDeviceId;
+    // Also close Android's connection object for the lost link: a stale one
+    // makes the next connect fail (GATT error 133).
+    _cleanup(disconnect: true);
     status = const DongleStatus();
+    var retry = false;
     if (!_userDisconnect) {
       if (wasSecuring) {
-        // connected fine, then dropped while pairing/encrypting: the dongle
-        // does that to phones it doesn't know (outside pairing mode)
-        rejectedDuringSetup = true;
+        // Connected fine, then dropped while pairing/encrypting: the dongle
+        // does that to phones it doesn't know (outside pairing mode). It also
+        // happens when the dongle reboots mid-setup, so the remembered dongle
+        // gets a few more tries before we show the pairing hint.
+        _securingDrops++;
+        if (isLast && _securingDrops < _maxSecuringDrops) {
+          retry = true;
+        } else {
+          rejectedDuringSetup = true;
+        }
       } else {
         error = wasConnecting ? 'Could not connect to the dongle' : 'Connection lost';
+        if (!wasConnecting) _retryCount = 0; // established link lost: start fresh
+        retry = isLast || !wasConnecting;
       }
     }
     state = LinkState.idle;
     notifyListeners();
-    // lost an established link: look for the dongle again and reconnect
-    if (!_userDisconnect && !wasConnecting && !wasSecuring) {
-      Future.delayed(const Duration(milliseconds: 800), startScan);
-    }
+    if (retry) _scheduleReconnect();
   }
 
   Future<void> _cleanup({required bool disconnect}) async {
@@ -236,6 +272,8 @@ class Dongle extends ChangeNotifier {
 
   Future<void> disconnect() async {
     _userDisconnect = true;
+    _retryTimer?.cancel();
+    _retryTimer = null;
     final id = deviceId;
     if (id != null && state == LinkState.connected) {
       try {
@@ -265,6 +303,8 @@ class Dongle extends ChangeNotifier {
 
   void retryAfterRejection() {
     rejectedDuringSetup = false;
+    _securingDrops = 0;
+    _retryCount = 0;
     error = null;
     startScan();
   }
@@ -447,6 +487,7 @@ class Dongle extends ChangeNotifier {
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     _scanSub?.cancel();
     _availSub?.cancel();
     _cleanup(disconnect: true);
