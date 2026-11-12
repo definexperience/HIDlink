@@ -42,7 +42,7 @@ Download the `.factory.bin` file for your board from the repository's **Releases
 1. Put the dongle in **download mode**: hold the button on the dongle while you plug it into the PC, then release the button.
 2. Open <https://espressif.github.io/esptool-js/> in Chrome or Edge.
 3. Set the baud rate to 921600, click **Connect**, and choose the "USB JTAG/serial" port.
-4. Under *Flash Address*, enter `0x0`. As the file, choose the downloaded `hidlink-t-dongle-s3-v1.1.3.factory.bin`, then click **Program**.
+4. Under *Flash Address*, enter `0x0`. As the file, choose the downloaded `hidlink-t-dongle-s3-v1.1.4.factory.bin`, then click **Program**.
 5. Unplug the dongle and plug it back in. The screen shows `HIDlink-XXXX` and **PAIRING**.
 
 | Image | Use for |
@@ -221,7 +221,9 @@ The format is simple enough to write another client for, such as a Python script
 |---|---|
 | App says "Dongle refused this phone" | This phone isn't paired. Hold the dongle button 3 s until the screen shows PAIRING, then tap *Try again*. |
 | Worked before, now fails after resetting the dongle | Remove `HIDlink-XXXX` in the phone's Bluetooth settings, then pair again. |
-| App takes long to reconnect after the PC reboots | The dongle restarts when USB power drops. From firmware/app 1.1.2 the app notices within about 2 s and keeps retrying on its own. Update both if it still takes 10 s or more. |
+| App takes long to reconnect after the PC reboots | The dongle restarts when USB power drops. From firmware/app 1.1.4 the app notices within about 4 s and keeps retrying on its own. Update both if it still takes 10 s or more. |
+| Connection drops for a few seconds, then comes back | Usually Wi‑Fi on the phone briefly crowding out Bluetooth (they share the 2.4 GHz radio). 1.1.4 tolerates gaps of up to 4 s; update dongle and app. Keeping the phone close to the dongle helps. |
+| Mouse feels sluggish | Update the app to 1.1.4 or newer: it asks Android for a fast connection again. |
 | Can't flash anymore | Hold the button while plugging in (download mode), then flash. |
 | Wrong characters typed (`z`/`y` swapped, `"` missing) | Set the right layout via the layout chip. On US‑International, quotes are handled automatically. |
 | Accents or € come out wrong | Check the layout chip (US‑International?) and *Settings → PC operating system*. |

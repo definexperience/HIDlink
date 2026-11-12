@@ -113,12 +113,17 @@ static void startPairing() {
   statusDirty = true;
 }
 
-// 7.5–15 ms connection interval for a responsive mouse, and a 2 s supervision
-// timeout so the phone notices quickly when the dongle loses USB power (it then
-// dies without sending a disconnect, and the phone only finds out by timeout).
+// 7.5–15 ms connection interval for a responsive mouse, and a 4 s supervision
+// timeout so the phone notices fairly quickly when the dongle loses USB power
+// (it then dies without sending a disconnect, and the phone only finds out by
+// timeout). Not shorter: the phone's Wi-Fi shares the 2.4 GHz radio and can
+// starve Bluetooth for a second or two, and with 2 s the link dropped then.
 #define CONN_ITVL_MIN 6     // x 1.25 ms
 #define CONN_ITVL_MAX 12    // x 1.25 ms
-#define CONN_TIMEOUT  200   // x 10 ms
+#define CONN_TIMEOUT  400   // x 10 ms
+// Only fight the phone's choice when its timeout is much longer than ours
+// (Android's high-priority preset is usually 5 s, which is fine).
+#define CONN_TIMEOUT_MAX_ACCEPTED 600  // x 10 ms
 static void requestConnParams(uint16_t handle) {
   if (server) server->updateConnParams(handle, CONN_ITVL_MIN, CONN_ITVL_MAX, 0, CONN_TIMEOUT);
 }
@@ -151,12 +156,12 @@ class ServerCallbacks : public NimBLEServerCallbacks {
   }
 
   // The phone may pick its own parameters (Android's "high priority" mode uses
-  // a 5-20 s supervision timeout). If the timeout ends up longer than ours,
-  // ask once more for our own values.
+  // a 5-20 s supervision timeout). If the timeout ends up much longer than
+  // ours, ask once more for our own values.
   void onConnParamsUpdate(NimBLEConnInfo &info) override {
     DBG("BLE conn params: itvl %u x1.25ms, latency %u, timeout %u x10ms\n", info.getConnInterval(),
         info.getConnLatency(), info.getConnTimeout());
-    if (bleSecured && !connParamsReasserted && info.getConnTimeout() > CONN_TIMEOUT) {
+    if (bleSecured && !connParamsReasserted && info.getConnTimeout() > CONN_TIMEOUT_MAX_ACCEPTED) {
       connParamsReasserted = true;
       requestConnParams(info.getConnHandle());
     }

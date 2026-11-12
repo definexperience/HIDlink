@@ -153,10 +153,15 @@ class Dongle extends ChangeNotifier {
       notifyListeners();
 
       await UniversalBle.discoverServices(id);
-      // No requestConnectionPriority(highPerformance) here: the dongle already
-      // asks for a 7.5-15 ms interval, and Android's high-priority preset would
-      // replace the dongle's 2 s supervision timeout with 5-20 s, so the app
-      // would take that long to notice the dongle rebooting.
+      // Ask Android for a short connection interval (11.25-15 ms). Without it
+      // many phones stay on their 30-50 ms default and ignore the dongle's own
+      // request, which makes the mouse feel sluggish. The dongle re-requests
+      // its own supervision timeout afterwards (see firmware main.cpp).
+      if (!kIsWeb && Platform.isAndroid) {
+        try {
+          await UniversalBle.requestConnectionPriority(id, BleConnectionPriority.highPerformance);
+        } catch (_) {}
+      }
       await _negotiateMtu(id);
 
       // Reading the (encrypted) status characteristic triggers pairing on a
